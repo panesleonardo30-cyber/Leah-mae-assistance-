@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Application Form - Leah Mae Online Assistance</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #0d6efd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 23px;
+        }
+
+        header p {
+            margin: 7px 0 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 25px auto;
+            padding: 20px;
+        }
+
+        .form-card {
+            background: white;
+            padding: 22px;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 22px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #0d6efd;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #result {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .success {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .required {
+            color: red;
+        }
+    </style>
+
+    <meta name="theme-color" content="#1d4ed8">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+</head>
+
+<body>
+
+<header>
+    <h1>Leah Mae Online Assistance</h1>
+    <p>Appointment & Assistance Application</p>
+</header>
+
+<div class="container">
+
+    <div class="form-card">
+
+        <h2>Application Form</h2>
+
+        <form id="applicationForm">
+
+            <label>
+                Full Name <span class="required">*</span>
+            </label>
+
+            <input
+                type="text"
+                name="fullName"
+                placeholder="Enter your full name"
+                required
+            >
+
+            <label>
+                Service <span class="required">*</span>
+            </label>
+
+            <select name="service" required>
+
+                <option value="">-- Select Service --</option>
+
+                <option value="Marina Appointment">
+                    Marina Appointment - ₱500
+                </option>
+
+                <option value="DFA Appointment">
+                    DFA Appointment - ₱350
+                </option>
+
+                <option value="PSA Appointment">
+                    PSA Appointment - ₱150
+                </option>
+
+                <option value="NBI Appointment">
+                    NBI Appointment - ₱350
+                </option>
+
+                <option value="Police Clearance">
+                    Police Clearance - ₱350
+                </option>
+
+                <option value="SSS/Pag-IBIG/PhilHealth Registration">
+                    SSS/Pag-IBIG/PhilHealth Registration - ₱300
+                </option>
+
+            </select>
+
+            <label>
+            Method of Payment <span class="required">*</span>
+        </label>
+        <select name="paymentMethod" required>
+            <option value="">-- Select Payment Method --</option>
+            <option value="GCash">GCash</option>
+            <option value="Maya">Maya</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Cash">Cash</option>
+            <option value="Other">Other</option>
+        </select>
+        <p>Payment timing: <strong>After Approval</strong></p>
+        <p>Payment instructions will be provided after your application is approved.</p>
+
+        <label>
+                Contact Number <span class="required">*</span>
+            </label>
+
+            <input
+                type="tel"
+                name="contact"
+                placeholder="09XXXXXXXXX"
+                required
+            >
+
+            <label>
+                Email Address
+            </label>
+
+            <input
+                type="email"
+                name="email"
+                placeholder="example@gmail.com"
+            >
+
+            <label>
+                Address
+            </label>
+
+            <textarea
+                name="address"
+                placeholder="Enter your complete address"
+            ></textarea>
+
+            <label>
+                Preferred Date
+            </label>
+
+            <input
+                type="date"
+                name="preferredDate"
+            >
+
+            <label>
+                Preferred Time
+            </label>
+
+            <input
+                type="time"
+                name="preferredTime"
+            >
+
+            <label>
+                Additional Message
+            </label>
+
+            <textarea
+                name="message"
+                placeholder="Additional information or request..."
+            ></textarea>
+
+            <button type="submit">
+                Submit Application
+            </button>
+
+        </form>
+
+        <div id="result"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+
+            
+const form = document.getElementById("applicationForm");
+const result = document.getElementById("result");
+let submitting = false;
+let pendingApplicationKey = null;
+
+form.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (submitting) return;
+
+    submitting = true;
+    if (!pendingApplicationKey) pendingApplicationKey = crypto.randomUUID();
+    const requestKey = pendingApplicationKey;
+
+    const button = form.querySelector('button[type="submit"]');
+    const originalText = button ? button.textContent : "";
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Submitting...";
+    }
+
+    result.style.display = "block";
+    result.className = "";
+    result.textContent = "Submitting application...";
+
+    try {
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.requestKey = requestKey;
+
+        const response = await fetch("/api/appointments", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+        });
+
+        const resultData = await response.json();
+
+        if (!response.ok || !resultData.success) {
+            throw new Error(
+                resultData.message || "Failed to submit application."
+            );
+        }
+
+        result.className = "success";
+        result.textContent =
+            "Application submitted successfully! Application ID: " +
+            resultData.id;
+
+        form.reset();
+        pendingApplicationKey = null;
+
+    } catch (error) {
+        result.className = "error";
+        result.textContent =
+            "Unable to confirm submission: " + error.message +
+            ". Check your bookings before trying again.";
+
+    } finally {
+        submitting = false;
+
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+});
+
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js")
+      .catch((error) => console.error("Service worker registration failed:", error));
+  });
+}
+</script>
+
+</body>
+</html>

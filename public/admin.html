@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Leah Mae Online Assistance</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #0d6efd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 25px;
+        }
+
+        .applications {
+            display: grid;
+            gap: 15px;
+        }
+
+        .application {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .application h3 {
+            margin-top: 0;
+        }
+
+        .application p {
+            margin: 7px 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: #fff3cd;
+            color: #664d03;
+            font-weight: bold;
+        }
+
+        button {
+            border: none;
+            padding: 10px 13px;
+            margin: 5px 4px 0 0;
+            border-radius: 7px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .approve {
+            background: #198754;
+        }
+
+        .complete {
+            background: #0d6efd;
+        }
+
+        .edit {
+            background: #fd7e14;
+        }
+
+        .delete {
+            background: #dc3545;
+        }
+
+        .refresh {
+            background: #6c757d;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 12px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .topbar h2 {
+            margin: 0;
+        }
+
+        @media (max-width: 600px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .topbar button {
+                width: 100%;
+            }
+        }
+    
+        [hidden] { display: none !important; }
+        .login-card {
+            max-width: 420px;
+            margin: 30px auto;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        .login-card input {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0 14px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 16px;
+        }
+        .login-card button { background: #0d6efd; }
+        #loginMessage { overflow-wrap: anywhere; }
+    </style>
+
+    <meta name="theme-color" content="#1d4ed8">
+    <link rel="manifest" href="/manifest.webmanifest">
+
+</head>
+
+<body>
+
+<header>
+    <h1>Leah Mae Online Assistance</h1>
+    <p>Admin Dashboard</p>
+</header>
+
+<div id="loginPanel" class="container" hidden>
+    <div class="login-card">
+        <h2>Admin Login</h2>
+        <p>Enter your administrator password to continue.</p>
+        <form id="adminLoginForm">
+            <label for="adminPassword">Admin password</label>
+            <input id="adminPassword" type="password"
+                autocomplete="current-password" required>
+            <button type="submit">Login</button>
+            <p id="loginMessage" role="status"></p>
+        </form>
+    </div>
+</div>
+
+<div id="dashboard" class="container" hidden>
+
+    <div class="stats">
+        <div class="stat">
+            <strong id="totalCount">0</strong>
+            Total
+        </div>
+
+        <div class="stat">
+            <strong id="pendingCount">0</strong>
+            Pending
+        </div>
+
+        <div class="stat">
+            <strong id="approvedCount">0</strong>
+            Approved
+        </div>
+    </div>
+
+    <div class="topbar">
+        <h2>Applications</h2>
+
+        <button class="refresh" onclick="loadAppointments()">
+            Refresh
+        </button>
+    </div>
+
+    <div id="applications" class="applications">
+        <div class="empty">
+            Loading applications...
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+function showLogin(message) {
+    document.getElementById("loginPanel").hidden = false;
+    document.getElementById("dashboard").hidden = true;
+    if (message) {
+        document.getElementById("loginMessage").textContent = message;
+    }
+}
+
+showLogin();
+
+document.getElementById("adminLoginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.getElementById("loginMessage");
+    const password = document.getElementById("adminPassword").value;
+    message.textContent = "Checking password...";
+
+    try {
+        const response = await fetch("/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            message.textContent = result.message || "Login failed.";
+            return;
+        }
+
+        document.getElementById("adminPassword").value = "";
+        document.getElementById("loginPanel").hidden = true;
+        document.getElementById("dashboard").hidden = false;
+        await loadAppointments();
+    } catch (error) {
+        message.textContent = "Cannot connect to the server. Please try again.";
+    }
+});
+
+async function loadAppointments() {
+
+    const container = document.getElementById("applications");
+
+    try {
+
+        const response = await fetch("/api/appointments");
+
+        if (response.status === 401) {
+            showLogin("Please log in to view applications.");
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error("Failed to load appointments");
+        }
+
+        const appointments = await response.json();
+
+        updateStats(appointments);
+
+        if (appointments.length === 0) {
+
+            container.innerHTML = `
+                <div class="empty">
+                    No applications yet.
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML = appointments.map(app => {
+
+            return `
+                <div class="application">
+
+                    <h3>${escapeHtml(app.fullName)}</h3>
+
+                    <p>
+                        <strong>Service:</strong>
+                        ${escapeHtml(app.service)}
+                    </p>
+
+                    <p>
+                        <strong>Method of Payment:</strong>
+                        ${escapeHtml(app.paymentMethod || "Not provided")}
+                    </p>
+                    <p>
+                        <strong>Payment Timing:</strong>
+                        ${escapeHtml(app.paymentTiming || "After Approval")}
+                    </p>
+                    <p>
+                        <strong>Contact:</strong>
+                        ${escapeHtml(app.contact)}
+                    </p>
+
+                    <p>
+                        <strong>Email:</strong>
+                        ${escapeHtml(app.email || "Not provided")}
+                    </p>
+
+                    <p>
+                        <strong>Address:</strong>
+                        ${escapeHtml(app.address || "Not provided")}
+                    </p>
+
+                    <p>
+                        <strong>Preferred Date:</strong>
+                        ${escapeHtml(app.preferredDate || "Not provided")}
+                    </p>
+
+                    <p>
+                        <strong>Preferred Time:</strong>
+                        ${escapeHtml(app.preferredTime || "Not provided")}
+                    </p>
+
+                    <p>
+                        <strong>Message:</strong>
+                        ${escapeHtml(app.message || "None")}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+
+                        <span class="status">
+                            ${escapeHtml(app.status || "Pending")}
+                        </span>
+                    </p>
+
+                    <button
+                        class="approve"
+                        onclick="updateStatus(${app.id}, 'Approved')">
+                        Approve
+                    </button>
+
+                    <button
+                        class="complete"
+                        onclick="updateStatus(${app.id}, 'Completed')">
+                        Complete
+                   </button>
+
+                   <button
+                        class="edit"
+                        onclick="editAppointment(${app.id})">
+                        Edit
+                   </button>
+
+                    <button
+                        class="delete"
+                        onclick="deleteAppointment(${app.id})">
+                        Delete
+                    </button>
+
+                </div>
+            `;
+
+        }).join("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML = `
+            <div class="empty">
+                Failed to load applications.
+            </div>
+        `;
+    }
+}
+
+
+function updateStats(appointments) {
+
+    const total = appointments.length;
+
+    const pending = appointments.filter(
+        app => (app.status || "Pending") === "Pending"
+    ).length;
+
+    const approved = appointments.filter(
+        app => app.status === "Approved"
+    ).length;
+
+    document.getElementById("totalCount").textContent = total;
+
+    document.getElementById("pendingCount").textContent = pending;
+
+    document.getElementById("approvedCount").textContent = approved;
+}
+
+
+async function updateStatus(id, newStatus) {
+
+    try {
+
+        const response = await fetch(
+            `/api/appointments/${id}`,
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Update failed.");
+            return;
+        }
+
+        alert(result.message);
+
+        loadAppointments();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Unable to update appointment.");
+    }
+}
+
+async function editAppointment(id) {
+
+    const newName = prompt("Enter new full name:");
+    if (newName === null) return;
+
+    const newService = prompt("Enter new service:");
+    if (newService === null) return;
+
+    const newContact = prompt("Enter new contact number:");
+    if (newContact === null) return;
+
+    try {
+
+        const response = await fetch(
+            `/api/appointments/${id}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    fullName: newName,
+                    service: newService,
+                    contact: newContact
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Update failed.");
+            return;
+        }
+
+        alert(result.message);
+
+        loadAppointments();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Edit error: " + error.message);
+    }
+}
+async function deleteAppointment(id) {
+
+    const confirmed = confirm(
+        "Are you sure you want to delete this appointment?"
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+
+        const response = await fetch(
+            `/api/appointments/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Delete failed.");
+            return;
+        }
+
+        alert(result.message);
+
+        loadAppointments();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Unable to delete appointment.");
+    }
+}
+
+
+function escapeHtml(value) {
+
+    const div = document.createElement("div");
+
+    div.textContent = value;
+
+    return div.innerHTML;
+}
+
+
+// Check admin session when page opens
+loadAppointments();
+
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js")
+      .catch((error) => console.error("Service worker registration failed:", error));
+  });
+}
+</script>
+
+</body>
+</html>
